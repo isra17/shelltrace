@@ -2,6 +2,7 @@
 #include <unicorn/unicorn.h>
 
 #include "tracer.h"
+#include "hook.h"
 
 #define ALIGN_ADDR(addr) ((addr) & ~0xFFF)
 #define ALIGN_SIZE(addr, size) ((((addr) & 0xFFF) + (size) + 0xFFF) & ~0xFFF)
@@ -13,10 +14,24 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
   }
 
   tracer->options = options;
+  for(size_t i=0; i < 2; i++) {
+    tracer->hooks[i] = 0;
+  }
 
   // Create uc_engine
   tracer->last_uc_err = uc_open(options->arch, options->mode, &tracer->uc);
   if(tracer->last_uc_err) return -1;
+
+  // Allocate stack
+  int stack_mem_start = tracer->options->stack_addr - tracer->options->stack_size;
+  tracer->last_uc_err = uc_mem_map(
+      tracer->uc,
+      ALIGN_ADDR(stack_mem_start),
+      ALIGN_SIZE(stack_mem_start, tracer->options->stack_size),
+      UC_PROT_READ | UC_PROT_WRITE);
+  if(tracer->last_uc_err) return -1;
+
+  uc_reg_write(tracer->uc, UC_X86_REG_ESP, &tracer->options->stack_addr);
 
   // Allocate shellcode
   tracer->last_uc_err = uc_mem_map(
@@ -26,13 +41,33 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
       UC_PROT_ALL);
   if(tracer->last_uc_err) return -1;
 
-  // Write shellcode
   tracer->last_uc_err = uc_mem_write(
       tracer->uc,
       tracer->options->shellcode_addr,
       tracer->options->shellcode,
       tracer->options->shellcode_size);
   if(tracer->last_uc_err) return -1;
+
+  // Add hooks
+  if(tracer->options->trace_code) {
+    uc_hook_add(
+        tracer->uc,
+        &tracer->hooks[0],
+        UC_HOOK_CODE,
+        st_hook_code,
+        NULL,
+        1, 0);
+  }
+
+  if(tracer->options->trace_syscall) {
+    uc_hook_add(
+        tracer->uc,
+        &tracer->hooks[1],
+        UC_HOOK_INTR,
+        st_hook_sys,
+        NULL,
+        1, 0);
+  }
 
   *ptracer = tracer;
   return 0;

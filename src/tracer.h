@@ -7,6 +7,7 @@ typedef struct st_tracer {
   struct st_options* options;
   uc_engine* uc;
   int last_uc_err;
+  uc_hook hooks[2];
 } st_tracer_t;
 
 int st_tracer_init(struct st_tracer** tracer, struct st_options* options);

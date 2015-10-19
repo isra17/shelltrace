@@ -16,6 +16,9 @@ typedef struct st_options {
   uintptr_t shellcode_addr;
   uc_arch arch;
   uc_mode mode;
+
+  uintptr_t stack_addr;
+  size_t stack_size;
 } st_options_t;
 
 void st_options_init(struct st_options** options);
