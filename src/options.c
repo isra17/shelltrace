@@ -1,7 +1,9 @@
-#include "options.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include "options.h"
+#include "util.h"
 
 #define BUF_SIZE 1024
 
@@ -21,41 +23,6 @@ static struct argp_option options[] = {
   {0}
 };
 
-static int read_file_content(char* filename, char** buf) {
-  int shellcode_fd = open(filename, O_RDONLY);
-  if(shellcode_fd < 0) {
-    return -1;
-  }
-
-  *buf = 0;
-  int buf_size = 0;
-  int ndata = 0;
-  int nread = 0;
-
-  do {
-    if(ndata >= buf_size) {
-      buf_size += BUF_SIZE;
-      *buf = reallocf(*buf, buf_size);
-      if(!*buf) {
-        ndata = -1;
-        goto CLEANUP;
-      }
-    }
-
-    nread = read(shellcode_fd, *buf + ndata, buf_size - ndata);
-    if(nread < 0) {
-      ndata = -1;
-      goto CLEANUP;
-    }
-
-    ndata += nread;
-  } while(nread);
-
-CLEANUP:
-  close(shellcode_fd);
-  return ndata;
-}
-
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
 {
   struct st_options* options = state->input;
@@ -68,7 +35,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case 'f':
       {
-        options->shellcode_size = read_file_content(
+        options->shellcode_size = readfile(
             arg,
             &options->shellcode);
 

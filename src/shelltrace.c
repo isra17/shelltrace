@@ -12,10 +12,12 @@ int main(int argc, char* argv[]) {
   st_options_parse(options, argc, argv);
 
   if(st_tracer_init(&tracer, options)) {
-    fprintf(stderr, "Error: Initialization failed: %d", tracer->last_uc_err);
+    fprintf(stderr, "Error: Initialization failed: %d\n", tracer->last_uc_err);
   }
 
-  st_tracer_run(tracer);
+  if(st_tracer_run(tracer)) {
+    fprintf(stderr, "Error: Running shellcore failed: %d\n", tracer->last_uc_err);
+  }
 
   st_tracer_destroy(tracer);
   st_options_destroy(options);

@@ -26,6 +26,7 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
       UC_PROT_ALL);
   if(tracer->last_uc_err) return -1;
 
+  // Write shellcode
   tracer->last_uc_err = uc_mem_write(
       tracer->uc,
       tracer->options->shellcode_addr,
@@ -38,6 +39,13 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
 }
 
 int st_tracer_run(struct st_tracer* tracer) {
+  tracer->last_uc_err = uc_emu_start(
+      tracer->uc,
+      tracer->options->shellcode_addr,
+      tracer->options->shellcode_addr + tracer->options->shellcode_size + 1,
+      0, 0);
+  if(tracer->last_uc_err) return -1;
+
   return 0;
 }
 

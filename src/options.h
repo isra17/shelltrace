@@ -11,7 +11,7 @@ typedef struct st_options {
   int trace_syscall;
 
   char* shellcode;
-  size_t shellcode_size;
+  int shellcode_size;
 
   uintptr_t shellcode_addr;
   uc_arch arch;
