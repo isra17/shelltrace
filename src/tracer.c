@@ -9,6 +9,8 @@
 
 int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
   struct st_tracer* tracer = malloc(sizeof(struct st_tracer));
+  *ptracer = tracer;
+
   if(!tracer) {
     return -1;
   }
@@ -55,7 +57,7 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
         &tracer->hooks[0],
         UC_HOOK_CODE,
         st_hook_code,
-        NULL,
+        tracer,
         1, 0);
   }
 
@@ -65,11 +67,17 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
         &tracer->hooks[1],
         UC_HOOK_INTR,
         st_hook_sys,
-        NULL,
+        tracer,
         1, 0);
   }
 
-  *ptracer = tracer;
+  // Init capstone
+  // TODO: Translate uc arch to cs
+  if (cs_open(CS_ARCH_X86, CS_MODE_32, &tracer->cs) != CS_ERR_OK) {
+    // TODO: expose the error somewhere in `tracer`
+    return -1;
+  }
+
   return 0;
 }
 
@@ -85,6 +93,7 @@ int st_tracer_run(struct st_tracer* tracer) {
 }
 
 void st_tracer_destroy(struct st_tracer* tracer) {
+  cs_close(&tracer->cs);
   uc_close(tracer->uc);
   free(tracer);
 }

@@ -21,7 +21,7 @@ sys_handler handlers[] = {
   sys_generic_handler
 };
 
-void st_hook_sys(uc_engine *uc, uint32_t intno, void *user_data) {
+void st_hook_sys(uc_engine *uc, uint32_t intno, struct st_tracer *tracer) {
   if(intno != 0x80) {
     return;
   }

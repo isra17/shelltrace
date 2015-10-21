@@ -12,7 +12,11 @@ int main(int argc, char* argv[]) {
   st_options_parse(options, argc, argv);
 
   if(st_tracer_init(&tracer, options)) {
-    fprintf(stderr, "Error: Initialization failed: %d\n", tracer->last_uc_err);
+    if (tracer) {
+      fprintf(stderr, "Error: Initialization failed: %d\n", tracer->last_uc_err);
+    } else {
+      fprintf(stderr, "Error: Cannot allocate tracer\n");
+    }
   }
 
   if(st_tracer_run(tracer)) {

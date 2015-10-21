@@ -4,7 +4,8 @@ project(CMAKEDEMO)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers -Wno-unused-parameter")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 
 add_executable(shelltrace src/shelltrace.c src/options.c src/tracer.c src/util.c src/hook.c src/hook_sys.c)
-target_link_libraries(shelltrace argp unicorn)
+target_link_libraries(shelltrace argp unicorn capstone)
 
