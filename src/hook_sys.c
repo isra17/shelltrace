@@ -36,10 +36,17 @@ void st_hook_sys(uc_engine *uc, uint32_t intno, struct st_tracer *tracer) {
   uc_reg_read(uc, UC_X86_REG_ESI, &r4);
   uc_reg_read(uc, UC_X86_REG_EDI, &r5);
 
-  if((size_t)syscall < sizeof(handlers)/sizeof(handlers[0])) {
-    handlers[syscall](uc, r1, r2, r3, r4, r5);
-  } else {
-    sys_generic_handler(uc, r1, r2, r3, r4, r5);
+  switch(syscall) {
+    case 0x1:
+      printf("syscall(%lld): exit(%llx)\n", syscall, r1);
+      uc_emu_stop(uc);
+      break;
+    case 0xb:
+      printf("syscall(%lld): execve(%llx, %llx, %llx)\n", syscall, r1, r2, r3);
+      uc_emu_stop(uc);
+      break;
+    default:
+      printf("syscall(%lld): (%llx, %llx, %llx)\n", syscall, r1, r2, r3);
   }
 }
 
