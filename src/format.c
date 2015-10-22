@@ -7,43 +7,55 @@ static bstring intfmt(uint64_t arg, struct st_tracer *tracer);
 typedef bstring (*arg_formatter)(uint64_t, struct st_tracer *);
 
 struct syscall_format {
+  int syscall;
   char *name;
   arg_formatter arg_formatters[6];
 };
 
 struct syscall_format syscall_formats[] = {
-    {"<invalid(0)>", {0}},
-    {"exit", {intfmt, 0}},
-    {"fork", {intfmt, 0}},
-    {"read", {intfmt, 0}},
-    {"write", {intfmt, 0}},
-    {"open", {intfmt, 0}},
-    {"close", {intfmt, 0}},
-    {"waitpid", {intfmt, 0}},
-    {"creat", {intfmt, 0}},
-    {"link", {intfmt, 0}},
-    {"unlink", {intfmt, 0}},
-    {"execve", {strfmt, astrfmt, astrfmt, 0}}
+    {1, "exit", {intfmt, 0}},
+    {2, "fork", {intfmt, 0}},
+    {3, "read", {intfmt, 0}},
+    {4, "write", {intfmt, 0}},
+    {5, "open", {intfmt, 0}},
+    {6, "close", {intfmt, 0}},
+    {7, "waitpid", {intfmt, 0}},
+    {8, "creat", {intfmt, 0}},
+    {9, "link", {intfmt, 0}},
+    {10, "unlink", {intfmt, 0}},
+    {11, "execve", {strfmt, astrfmt, astrfmt, 0}},
+    {63, "dup2", {intfmt, intfmt, 0}},
+    {102, "socketcall", {intfmt, intfmt, 0}},
 };
 
-struct syscall_format default_format = {"<syscall(%d)>",
-                                        {intfmt, intfmt,
-                                         intfmt, intfmt,
-                                         intfmt, 0}};
+struct syscall_format default_format = {
+    -1, "<syscall(%d)>", {intfmt, intfmt, intfmt, intfmt, intfmt, 0}};
+
+static struct syscall_format* find_syscall_formatter(int syscall) {
+  int imin=0;
+  int imax = sizeof(syscall_formats)/sizeof(syscall_formats[0]);
+
+  while(imin <= imax) {
+    int imid = (imin+imax)/2;
+    if(syscall_formats[imid].syscall == syscall) {
+      return &syscall_formats[imid];
+    } else if(syscall_formats[imid].syscall < syscall) {
+      imin = imid + 1;
+    } else {
+      imax = imid - 1;
+    }
+  }
+
+  return &default_format;
+}
 
 bstring st_format_syscall(struct st_syscall_args *syscall_args,
                           struct st_tracer *tracer) {
   bstring formatted_syscall;
-  struct syscall_format *formatter;
+  struct syscall_format *formatter =
+      find_syscall_formatter(syscall_args->syscall);
 
-  if (syscall_args->syscall <
-      sizeof(syscall_formats) / sizeof(syscall_formats[0])) {
-    formatter = &syscall_formats[syscall_args->syscall];
-    formatted_syscall = bfromcstr(formatter->name);
-  } else {
-    formatter = &default_format;
-    formatted_syscall = bformat(formatter->name, syscall_args->syscall);
-  }
+  formatted_syscall = bformat(formatter->name, syscall_args->syscall);
 
   bconchar(formatted_syscall, '(');
   arg_formatter* arg_formatter_it = formatter->arg_formatters;
