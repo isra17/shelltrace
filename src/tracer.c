@@ -29,7 +29,7 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
   tracer->last_uc_err = uc_mem_map(
       tracer->uc,
       ALIGN_ADDR(stack_mem_start),
-      ALIGN_SIZE(stack_mem_start, tracer->options->stack_size),
+      ALIGN_SIZE(stack_mem_start, tracer->options->stack_size + 0x100),
       UC_PROT_READ | UC_PROT_WRITE);
   if(tracer->last_uc_err) return -1;
 
