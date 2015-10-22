@@ -1,7 +1,8 @@
 #include "format.h"
 
-static bstring string_arg_formatter(uint64_t arg, struct st_tracer *tracer);
-static bstring int_arg_formatter(uint64_t arg, struct st_tracer *tracer);
+static bstring strfmt(uint64_t arg, struct st_tracer *tracer);
+static bstring astrfmt(uint64_t arg, struct st_tracer *tracer);
+static bstring intfmt(uint64_t arg, struct st_tracer *tracer);
 
 typedef bstring (*arg_formatter)(uint64_t, struct st_tracer *);
 
@@ -12,23 +13,23 @@ struct syscall_format {
 
 struct syscall_format syscall_formats[] = {
     {"<invalid(0)>", {0}},
-    {"exit", {int_arg_formatter, 0}},
-    {"fork", {int_arg_formatter, 0}},
-    {"read", {int_arg_formatter, 0}},
-    {"write", {int_arg_formatter, 0}},
-    {"open", {int_arg_formatter, 0}},
-    {"close", {int_arg_formatter, 0}},
-    {"waitpid", {int_arg_formatter, 0}},
-    {"creat", {int_arg_formatter, 0}},
-    {"link", {int_arg_formatter, 0}},
-    {"unlink", {int_arg_formatter, 0}},
-    {"execve", {int_arg_formatter, 0}}
+    {"exit", {intfmt, 0}},
+    {"fork", {intfmt, 0}},
+    {"read", {intfmt, 0}},
+    {"write", {intfmt, 0}},
+    {"open", {intfmt, 0}},
+    {"close", {intfmt, 0}},
+    {"waitpid", {intfmt, 0}},
+    {"creat", {intfmt, 0}},
+    {"link", {intfmt, 0}},
+    {"unlink", {intfmt, 0}},
+    {"execve", {strfmt, astrfmt, astrfmt, 0}}
 };
 
 struct syscall_format default_format = {"<syscall(%d)>",
-                                        {int_arg_formatter, int_arg_formatter,
-                                         int_arg_formatter, int_arg_formatter,
-                                         int_arg_formatter, 0}};
+                                        {intfmt, intfmt,
+                                         intfmt, intfmt,
+                                         intfmt, 0}};
 
 bstring st_format_syscall(struct st_syscall_args *syscall_args,
                           struct st_tracer *tracer) {
@@ -63,11 +64,48 @@ bstring st_format_syscall(struct st_syscall_args *syscall_args,
   return formatted_syscall;
 }
 
-bstring string_arg_formatter(uint64_t arg, struct st_tracer *tracer) {
-  return bfromcstr("<string>");
+bstring strfmt(uint64_t arg, struct st_tracer *tracer) {
+  char mem_buf[256];
+  uc_err err = uc_mem_read(tracer->uc, arg, mem_buf, sizeof(mem_buf));
+  if(mem_buf[sizeof(mem_buf)-1]) {
+    memcpy(mem_buf + sizeof(mem_buf) - 4, "...", 4);
+  }
+
+  if(err) {
+    return bformat("0x%llx => <invalid string>");
+  } else {
+    return bformat("0x%llx => \"%s\"", arg, mem_buf);
+  }
 }
 
-bstring int_arg_formatter(uint64_t arg, struct st_tracer *tracer) {
+bstring astrfmt(uint64_t arg, struct st_tracer *tracer) {
+  if(!arg) {
+    return intfmt(arg, tracer);
+  }
+
+  bstring formatted_array = bformat("0x%llx => [", arg);
+  uint64_t item = 0;
+
+  // TODO: assumes 32 bits, make it arch/mode independant
+  uc_mem_read(tracer->uc, arg, &item, 4);
+  while(item) {
+    bstring formatted_item = strfmt(item, tracer);
+    bconcat(formatted_array, formatted_item);
+    bdestroy(formatted_item);
+
+    arg += 4;
+    uc_mem_read(tracer->uc, arg, &item, 4);
+
+    if(item) {
+      bcatcstr(formatted_array, ", ");
+    }
+  }
+  bconchar(formatted_array, ']');
+
+  return formatted_array;
+}
+
+bstring intfmt(uint64_t arg, struct st_tracer *tracer) {
   bstring formatted_arg = bformat("0x%llx", arg);
   return formatted_arg;
 }
