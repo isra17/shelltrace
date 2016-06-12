@@ -33,7 +33,7 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
       UC_PROT_READ | UC_PROT_WRITE);
   if(tracer->last_uc_err) return -1;
 
-  uc_reg_write(tracer->uc, UC_X86_REG_ESP, &tracer->options->stack_addr);
+  uc_reg_write(tracer->uc, UC_X86_REG_RSP, &tracer->options->stack_addr);
 
   // Allocate shellcode
   tracer->last_uc_err = uc_mem_map(
@@ -42,6 +42,15 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
       ALIGN_SIZE(tracer->options->shellcode_addr, tracer->options->shellcode_size),
       UC_PROT_ALL);
   if(tracer->last_uc_err) return -1;
+
+  // Allocate mem
+  /*
+  tracer->last_uc_err = uc_mem_map(
+      tracer->uc,
+      ALIGN_ADDR(0x400000),
+      0x10000,
+      UC_PROT_ALL);
+  if(tracer->last_uc_err) return -1;*/
 
   tracer->last_uc_err = uc_mem_write(
       tracer->uc,
@@ -73,7 +82,7 @@ int st_tracer_init(struct st_tracer** ptracer, struct st_options* options) {
 
   // Init capstone
   // TODO: Translate uc arch to cs
-  if (cs_open(CS_ARCH_X86, CS_MODE_32, &tracer->cs) != CS_ERR_OK) {
+  if (cs_open(CS_ARCH_X86, CS_MODE_64, &tracer->cs) != CS_ERR_OK) {
     // TODO: expose the error somewhere in `tracer`
     return -1;
   }

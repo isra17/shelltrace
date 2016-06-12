@@ -13,19 +13,10 @@ struct syscall_format {
 };
 
 struct syscall_format syscall_formats[] = {
-    {1, "exit", {intfmt, 0}},
-    {2, "fork", {intfmt, 0}},
-    {3, "read", {intfmt, 0}},
-    {4, "write", {intfmt, 0}},
-    {5, "open", {intfmt, 0}},
-    {6, "close", {intfmt, 0}},
-    {7, "waitpid", {intfmt, 0}},
-    {8, "creat", {intfmt, 0}},
-    {9, "link", {intfmt, 0}},
-    {10, "unlink", {intfmt, 0}},
-    {11, "execve", {strfmt, astrfmt, astrfmt, 0}},
-    {63, "dup2", {intfmt, intfmt, 0}},
-    {102, "socketcall", {intfmt, intfmt, 0}},
+    {0, "read", {intfmt, strfmt, intfmt, 0}},
+    {1, "write", {intfmt, strfmt, intfmt, 0}},
+    {34, "pause", {0}},
+    {60, "exit", {intfmt, 0}},
 };
 
 struct syscall_format default_format = {

@@ -58,13 +58,13 @@ void st_options_init(struct st_options** poptions) {
 
   options->shellcode_size = 0;
   options->shellcode = 0;
-  options->shellcode_addr = 0x1000000;
+  options->shellcode_addr = 0x400000;
 
   options->arch = UC_ARCH_X86;
-  options->mode = UC_MODE_32;
+  options->mode = UC_MODE_64;
 
-  options->stack_addr = 0x60000000;
-  options->stack_size = 0x100000;
+  options->stack_addr = 0x4000000;
+  options->stack_size = 0x10000;
 
   *poptions = options;
 }
